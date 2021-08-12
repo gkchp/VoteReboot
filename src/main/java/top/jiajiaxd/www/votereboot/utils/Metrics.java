@@ -23,17 +23,22 @@ import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
 
+import static top.jiajiaxd.www.votereboot.utils.Constants.FALSE;
+
 /**
+ * @author bStats
  * bStats collects some data for plugin authors.
  * <p>
  * Check out https://bStats.org/ to learn more about bStats!
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class Metrics {
+    private static final String PROPERTY_RELOCATE_CHECK = "bstats.relocatecheck";
+    private static final String SERVER_UUID = "serverUuid";
 
     static {
         // You can use the property to disable the check in your test environment
-        if (System.getProperty("bstats.relocatecheck") == null || !System.getProperty("bstats.relocatecheck").equals("false")) {
+        if (System.getProperty(PROPERTY_RELOCATE_CHECK) == null || !FALSE.equals(System.getProperty(PROPERTY_RELOCATE_CHECK))) {
             // Maven's Relocate is clever and changes strings, too. So we have to use this little "trick" ... :D
             final String defaultPackage = new String(
                     new byte[]{'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's', '.', 'b', 'u', 'k', 'k', 'i', 't'});
@@ -45,40 +50,60 @@ public class Metrics {
         }
     }
 
-    // The version of this bStats class
+    /**
+     * The version of this bStats class
+     */
     public static final int B_STATS_VERSION = 1;
 
-    // The url to which the data is sent
+    /**
+     * The url to which the data is sent
+     */
     private static final String URL = "https://bStats.org/submitData/bukkit";
 
-    // Is bStats enabled on this server?
+    /**
+     * Is bStats enabled on this server?
+     */
     private boolean enabled;
 
-    // Should failed requests be logged?
+    /**
+     * Should failed requests be logged?
+     */
     private static boolean logFailedRequests;
 
-    // Should the sent data be logged?
+    /**
+     * Should the sent data be logged?
+     */
     private static boolean logSentData;
 
-    // Should the response text be logged?
+    /**
+     * Should the response text be logged?
+     */
     private static boolean logResponseStatusText;
 
-    // The uuid of the server
+    /**
+     * The uuid of the server
+     */
     private static String serverUUID;
 
-    // The plugin
+    /**
+     * The plugin
+     */
     private final Plugin plugin;
 
-    // The plugin id
+    /**
+     * The plugin id
+     */
     private final int pluginId;
 
-    // A list with all custom charts
-    private final List<CustomChart> charts = new ArrayList<>();
+    /**
+     * A list with all custom charts
+     */
+    private final List<AbstractCustomChart> charts = new ArrayList<>();
 
     /**
      * Class constructor.
      *
-     * @param plugin The plugin which stats should be submitted.
+     * @param plugin   The plugin which stats should be submitted.
      * @param pluginId The id of the plugin.
      *                 It can be found at <a href="https://bstats.org/what-is-my-plugin-id">What is my plugin id?</a>
      */
@@ -95,12 +120,12 @@ public class Metrics {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
 
         // Check if the config file exists
-        if (!config.isSet("serverUuid")) {
+        if (!config.isSet(SERVER_UUID)) {
 
             // Add default values
             config.addDefault("enabled", true);
             // Every server gets it's unique random id.
-            config.addDefault("serverUuid", UUID.randomUUID().toString());
+            config.addDefault(SERVER_UUID, UUID.randomUUID().toString());
             // Should failed request be logged?
             config.addDefault("logFailedRequests", false);
             // Should the sent data be logged?
@@ -122,7 +147,7 @@ public class Metrics {
 
         // Load the data
         enabled = config.getBoolean("enabled", true);
-        serverUUID = config.getString("serverUuid");
+        serverUUID = config.getString(SERVER_UUID);
         logFailedRequests = config.getBoolean("logFailedRequests", false);
         logSentData = config.getBoolean("logSentData", false);
         logResponseStatusText = config.getBoolean("logResponseStatusText", false);
@@ -132,8 +157,10 @@ public class Metrics {
             // Search for all other bStats Metrics classes to see if we are the first one
             for (Class<?> service : Bukkit.getServicesManager().getKnownServices()) {
                 try {
-                    service.getField("B_STATS_VERSION"); // Our identifier :)
-                    found = true; // We aren't the first
+                    // Our identifier :)
+                    service.getField("B_STATS_VERSION");
+                    // We aren't the first
+                    found = true;
                     break;
                 } catch (NoSuchFieldException ignored) { }
             }
@@ -160,7 +187,7 @@ public class Metrics {
      *
      * @param chart The chart to add.
      */
-    public void addCustomChart(CustomChart chart) {
+    public void addCustomChart(AbstractCustomChart chart) {
         if (chart == null) {
             throw new IllegalArgumentException("Chart cannot be null!");
         }
@@ -171,7 +198,8 @@ public class Metrics {
      * Starts the Scheduler which submits our data every 30 minutes.
      */
     private void startSubmitting() {
-        final Timer timer = new Timer(true); // We use a timer cause the Bukkit scheduler is affected by server lags
+        // We use a timer cause the Bukkit scheduler is affected by server lags
+        final Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -201,14 +229,18 @@ public class Metrics {
         String pluginName = plugin.getDescription().getName();
         String pluginVersion = plugin.getDescription().getVersion();
 
-        data.addProperty("pluginName", pluginName); // Append the name of the plugin
-        data.addProperty("id", pluginId); // Append the id of the plugin
-        data.addProperty("pluginVersion", pluginVersion); // Append the version of the plugin
+        // Append the name of the plugin
+        data.addProperty("pluginName", pluginName);
+        // Append the id of the plugin
+        data.addProperty("id", pluginId);
+        // Append the version of the plugin
+        data.addProperty("pluginVersion", pluginVersion);
         JsonArray customCharts = new JsonArray();
-        for (CustomChart customChart : charts) {
+        for (AbstractCustomChart customChart : charts) {
             // Add the data of the custom charts
             JsonObject chart = customChart.getRequestJsonObject();
-            if (chart == null) { // If the chart is null, we skip it
+            // If the chart is null, we skip it
+            if (chart == null) {
                 continue;
             }
             customCharts.add(chart);
@@ -234,7 +266,8 @@ public class Metrics {
                     ? ((Collection<?>) onlinePlayersMethod.invoke(Bukkit.getServer())).size()
                     : ((Player[]) onlinePlayersMethod.invoke(Bukkit.getServer())).length;
         } catch (Exception e) {
-            playerAmount = Bukkit.getOnlinePlayers().size(); // Just use the new method if the Reflection failed
+            // Just use the new method if the Reflection failed
+            playerAmount = Bukkit.getOnlinePlayers().size();
         }
         int onlineMode = Bukkit.getOnlineMode() ? 1 : 0;
         String bukkitVersion = Bukkit.getVersion();
@@ -249,7 +282,7 @@ public class Metrics {
 
         JsonObject data = new JsonObject();
 
-        data.addProperty("serverUUID", serverUUID);
+        data.addProperty(SERVER_UUID, serverUUID);
 
         data.addProperty("playerAmount", playerAmount);
         data.addProperty("onlineMode", onlineMode);
@@ -275,14 +308,16 @@ public class Metrics {
         // Search for all other bStats Metrics classes to get their plugin data
         for (Class<?> service : Bukkit.getServicesManager().getKnownServices()) {
             try {
-                service.getField("B_STATS_VERSION"); // Our identifier :)
+                // Our identifier :)
+                service.getField("B_STATS_VERSION");
 
                 for (RegisteredServiceProvider<?> provider : Bukkit.getServicesManager().getRegistrations(service)) {
                     try {
                         Object plugin = provider.getService().getMethod("getPluginData").invoke(provider.getProvider());
                         if (plugin instanceof JsonObject) {
                             pluginData.add((JsonObject) plugin);
-                        } else { // old bstats version compatibility
+                        } else {
+                            // old bstats version compatibility
                             try {
                                 Class<?> jsonObjectJsonSimple = Class.forName("org.json.simple.JSONObject");
                                 if (plugin.getClass().isAssignableFrom(jsonObjectJsonSimple)) {
@@ -346,9 +381,11 @@ public class Metrics {
         connection.setRequestMethod("POST");
         connection.addRequestProperty("Accept", "application/json");
         connection.addRequestProperty("Connection", "close");
-        connection.addRequestProperty("Content-Encoding", "gzip"); // We gzip our request
+        // We gzip our request
+        connection.addRequestProperty("Content-Encoding", "gzip");
         connection.addRequestProperty("Content-Length", String.valueOf(compressedData.length));
-        connection.setRequestProperty("Content-Type", "application/json"); // We send our data in JSON format
+        // We send our data in JSON format
+        connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("User-Agent", "MC-Server/" + B_STATS_VERSION);
 
         // Send data
@@ -391,7 +428,7 @@ public class Metrics {
     /**
      * Represents a custom chart.
      */
-    public static abstract class CustomChart {
+    public static abstract class AbstractCustomChart {
 
         // The id of the chart
         final String chartId;
@@ -401,7 +438,7 @@ public class Metrics {
          *
          * @param chartId The id of the chart.
          */
-        CustomChart(String chartId) {
+        AbstractCustomChart(String chartId) {
             if (chartId == null || chartId.isEmpty()) {
                 throw new IllegalArgumentException("ChartId cannot be null or empty!");
             }
@@ -434,14 +471,14 @@ public class Metrics {
     /**
      * Represents a custom simple pie.
      */
-    public static class SimplePie extends CustomChart {
+    public static class SimplePie extends AbstractCustomChart {
 
         private final Callable<String> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public SimplePie(String chartId, Callable<String> callable) {
@@ -465,14 +502,14 @@ public class Metrics {
     /**
      * Represents a custom advanced pie.
      */
-    public static class AdvancedPie extends CustomChart {
+    public static class AdvancedPie extends AbstractCustomChart {
 
         private final Callable<Map<String, Integer>> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public AdvancedPie(String chartId, Callable<Map<String, Integer>> callable) {
@@ -509,14 +546,14 @@ public class Metrics {
     /**
      * Represents a custom drilldown pie.
      */
-    public static class DrilldownPie extends CustomChart {
+    public static class DrilldownPie extends AbstractCustomChart {
 
         private final Callable<Map<String, Map<String, Integer>>> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public DrilldownPie(String chartId, Callable<Map<String, Map<String, Integer>>> callable) {
@@ -558,14 +595,14 @@ public class Metrics {
     /**
      * Represents a custom single line chart.
      */
-    public static class SingleLineChart extends CustomChart {
+    public static class SingleLineChart extends AbstractCustomChart {
 
         private final Callable<Integer> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public SingleLineChart(String chartId, Callable<Integer> callable) {
@@ -590,14 +627,14 @@ public class Metrics {
     /**
      * Represents a custom multi line chart.
      */
-    public static class MultiLineChart extends CustomChart {
+    public static class MultiLineChart extends AbstractCustomChart {
 
         private final Callable<Map<String, Integer>> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public MultiLineChart(String chartId, Callable<Map<String, Integer>> callable) {
@@ -635,14 +672,14 @@ public class Metrics {
     /**
      * Represents a custom simple bar chart.
      */
-    public static class SimpleBarChart extends CustomChart {
+    public static class SimpleBarChart extends AbstractCustomChart {
 
         private final Callable<Map<String, Integer>> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public SimpleBarChart(String chartId, Callable<Map<String, Integer>> callable) {
@@ -673,14 +710,14 @@ public class Metrics {
     /**
      * Represents a custom advanced bar chart.
      */
-    public static class AdvancedBarChart extends CustomChart {
+    public static class AdvancedBarChart extends AbstractCustomChart {
 
         private final Callable<Map<String, int[]>> callable;
 
         /**
          * Class constructor.
          *
-         * @param chartId The id of the chart.
+         * @param chartId  The id of the chart.
          * @param callable The callable which is used to request the chart data.
          */
         public AdvancedBarChart(String chartId, Callable<Map<String, int[]>> callable) {

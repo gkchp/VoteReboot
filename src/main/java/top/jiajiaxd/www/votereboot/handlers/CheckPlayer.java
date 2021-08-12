@@ -12,30 +12,34 @@ import top.jiajiaxd.www.votereboot.VoteReboot;
 import java.util.Iterator;
 import java.util.Map;
 
-
+/**
+ * @author jiajiaxd
+ */
 public class CheckPlayer implements org.bukkit.event.Listener {
 
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent Player) {
+    public void onPlayerJoin(PlayerJoinEvent player) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                VoteReboot.semap.put(Player.getPlayer().getName(), 0);
-                VoteReboot.isGuaji.put(Player.getPlayer().getName(), false);
+                VoteReboot.semap.put(player.getPlayer().getName(), 0);
+                VoteReboot.isGuaji.put(player.getPlayer().getName(), false);
             }
         }.runTaskAsynchronously(VoteReboot.me);
 
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void PlayerMoving(PlayerMoveEvent player) {
+    public void playerMoving(PlayerMoveEvent player) {
         new BukkitRunnable() {
             @Override
             public void run() {
                 String name = player.getPlayer().getName();
                 if (VoteReboot.isGuaji.get(name)) {
-                    if (VoteReboot.notice) VoteReboot.sendGlobalMessage(name + "回来了");
+                    if (VoteReboot.notice) {
+                        VoteReboot.sendGlobalMessage(name + "回来了");
+                    }
                     VoteReboot.isGuaji.put(name, false);
                 }
                 VoteReboot.semap.put(name, 0);
@@ -44,7 +48,7 @@ public class CheckPlayer implements org.bukkit.event.Listener {
     }
 
     @EventHandler
-    public void playerchat(AsyncPlayerChatEvent player) {
+    public void playerChat(AsyncPlayerChatEvent player) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -52,7 +56,9 @@ public class CheckPlayer implements org.bukkit.event.Listener {
                 VoteReboot.semap.put(name, 0);
                 if (VoteReboot.isGuaji.get(name)) {
                     VoteReboot.isGuaji.put(name, false);
-                    if (VoteReboot.notice) VoteReboot.sendGlobalMessage(name + "回来了");
+                    if (VoteReboot.notice) {
+                        VoteReboot.sendGlobalMessage(name + "回来了");
+                    }
                 }
             }
         }.runTaskAsynchronously(VoteReboot.me);
@@ -61,7 +67,7 @@ public class CheckPlayer implements org.bukkit.event.Listener {
     }
 
     @EventHandler
-    public void playerquit(PlayerQuitEvent player) {
+    public void playerQuit(PlayerQuitEvent player) {
         new BukkitRunnable() {
             @Override
             public void run() {

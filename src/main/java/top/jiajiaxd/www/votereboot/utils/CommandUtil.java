@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @author jiajiaxd
+ */
 public final class CommandUtil {
     public static String run(String command) throws IOException {
         Scanner input = null;
@@ -23,7 +26,8 @@ public final class CommandUtil {
             while (input.hasNextLine()) {
                 result += input.nextLine() + "\n";
             }
-            result = command + "\n" + result; //加上命令本身，打印出来
+            //加上命令本身，打印出来
+            result = command + "\n" + result;
         } finally {
             if (input != null) {
                 input.close();
@@ -52,7 +56,8 @@ public final class CommandUtil {
             while (input.hasNextLine()) {
                 result += input.nextLine() + "\n";
             }
-            result = command + "\n" + result; //加上命令本身，打印出来
+            //加上命令本身，打印出来
+            result = command + "\n" + result;
         } finally {
             if (input != null) {
                 input.close();
