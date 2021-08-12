@@ -2,11 +2,16 @@ package top.jiajiaxd.www.votereboot;
 
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.command.*;
 import org.bukkit.scheduler.BukkitRunnable;
+import top.jiajiaxd.www.votereboot.handlers.CheckPlayer;
+import top.jiajiaxd.www.votereboot.handlers.Notice;
+import top.jiajiaxd.www.votereboot.utils.CommandUtil;
+import top.jiajiaxd.www.votereboot.utils.Metrics;
 
 import java.io.File;
 import java.io.IOException;
@@ -260,8 +265,8 @@ public class VoteReboot extends JavaPlugin {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(),getCS("cc"));
         }else{
             sendCMessage("正在尝试重启...");
-            sendCMessage("正在执行命令"+getCS("ccwl"));
-            sendCMessage("返回结果："+CommandUtil.run(getCS("ccwl")));
+            sendCMessage("正在执行命令" + getCS("ccwl"));
+            sendCMessage("返回结果：" + CommandUtil.run(getCS("ccwl")));
         }
     }
 

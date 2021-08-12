@@ -1,17 +1,10 @@
-package top.jiajiaxd.www.votereboot;
+package top.jiajiaxd.www.votereboot.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 public class Internet {
     public static String Get(String URL){

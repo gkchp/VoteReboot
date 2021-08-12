@@ -1,8 +1,9 @@
-package top.jiajiaxd.www.votereboot;
+package top.jiajiaxd.www.votereboot.handlers;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import top.jiajiaxd.www.votereboot.VoteReboot;
 
 public class Notice implements org.bukkit.event.Listener {
     @EventHandler
