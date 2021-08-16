@@ -19,6 +19,9 @@ EnablePlugin: true
 #rate默认为0.6
 rate: 0.6
 
+#开始投票所需的最小在线玩家数量，默认为3
+minimalVote: 3
+
 #重启方式 1:在控制台发送指定命令  2.在终端(cmd)发送指定命令
 #默认为1
 way: 1
