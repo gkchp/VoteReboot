@@ -85,7 +85,9 @@ public class VoteReboot extends JavaPlugin {
         }
         if (checkPlayer) {
             notice = TRUE.equals(getConfigValue(CONFIG_AFK_NOTICE));
-            Bukkit.getPluginManager().registerEvents(new PlayerEventHandler(), this);
+            if (onInit) {
+                Bukkit.getPluginManager().registerEvents(new PlayerEventHandler(), this);
+            }
             for (Player p : Bukkit.getServer().getOnlinePlayers()) {
                 lastActivity.put(p.getUniqueId(), System.currentTimeMillis());
                 isAFK.put(p.getUniqueId(), false);
