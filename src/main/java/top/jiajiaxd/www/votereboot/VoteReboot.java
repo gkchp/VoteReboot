@@ -190,7 +190,7 @@ public class VoteReboot extends JavaPlugin {
         }
         int onlinePlayers = Bukkit.getOnlinePlayers().size() - afkCount;
         double rate = Double.parseDouble(getConfigValue(CONFIG_VOTE_RATE));
-        return Double.valueOf(Math.ceil(onlinePlayers * rate + 0.5)).intValue();
+        return Double.valueOf(Math.ceil(onlinePlayers * rate)).intValue();
     }
 
     public void addVotedPlayer(CommandSender player) {
