@@ -21,9 +21,10 @@ public class PlayerEventHandler implements org.bukkit.event.Listener {
             @Override
             public void run() {
                 UUID playerId = player.getPlayer().getUniqueId();
-                VoteReboot.VoteStatus.put(playerId, false);
+                VoteReboot.playerName.put(playerId, player.getPlayer().getName());
+                VoteReboot.voteStatus.put(playerId, false);
                 VoteReboot.isAFK.put(playerId, false);
-                VoteReboot.lastActivity.put(playerId, System.currentTimeMillis());
+                VoteReboot.estimatedAfkTime.put(playerId, System.currentTimeMillis() + VoteReboot.timeoutMillis);
                 if (VoteReboot.isVoting) {
                     instance.checkVotes();
                 }
@@ -58,9 +59,10 @@ public class PlayerEventHandler implements org.bukkit.event.Listener {
             @Override
             public void run() {
                 UUID playerId = player.getPlayer().getUniqueId();
-                VoteReboot.VoteStatus.remove(playerId);
+                VoteReboot.voteStatus.remove(playerId);
+                VoteReboot.playerName.remove(playerId);
                 VoteReboot.isAFK.remove(playerId);
-                VoteReboot.lastActivity.remove(playerId);
+                VoteReboot.estimatedAfkTime.remove(playerId);
                 if (VoteReboot.isVoting) {
                     instance.checkVotes();
                 }
@@ -71,7 +73,7 @@ public class PlayerEventHandler implements org.bukkit.event.Listener {
     private void checkAndUpdateAfk(PlayerEvent event) {
         String name = event.getPlayer().getName();
         UUID playerId = event.getPlayer().getUniqueId();
-        VoteReboot.lastActivity.put(playerId, System.currentTimeMillis());
+        VoteReboot.estimatedAfkTime.put(playerId, System.currentTimeMillis() + VoteReboot.timeoutMillis);
         if (VoteReboot.isAFK.get(playerId)) {
             //加同步防止多次提醒
             synchronized (VoteReboot.class) {

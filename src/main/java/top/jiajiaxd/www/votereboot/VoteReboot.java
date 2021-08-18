@@ -38,10 +38,12 @@ public class VoteReboot extends JavaPlugin {
     public static boolean notice;
     public static boolean ipCheck;
     public static boolean checkPlayer;
+    public static long timeoutMillis;
     Metrics metrics = new Metrics(this, 7670);
 
-    public static ConcurrentHashMap<UUID, Boolean> VoteStatus = new ConcurrentHashMap<>();
-    public static ConcurrentHashMap<UUID, Long> lastActivity = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<UUID, String> playerName = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<UUID, Boolean> voteStatus = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<UUID, Long> estimatedAfkTime = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<UUID, Boolean> isAFK = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, Boolean> IPMap = new ConcurrentHashMap<>();
     private static boolean onInit = true;
@@ -80,6 +82,7 @@ public class VoteReboot extends JavaPlugin {
         messagePrefix = getConfigValue(CONFIG_MESSAGE_PREFIX);
         ipCheck = TRUE.equals(getConfigValue(CONFIG_CHECK_IP));
         checkPlayer = TRUE.equals(getConfigValue(CONFIG_CHECK_PLAYER));
+        timeoutMillis = Long.parseLong(getConfigValue(CONFIG_AFK_TIMEOUT)) * 1000;
         if (update && TRUE.equals(getConfigValue(CONFIG_CHECK_UPDATE))) {
             checkUpdate();
         }
@@ -89,7 +92,7 @@ public class VoteReboot extends JavaPlugin {
                 Bukkit.getPluginManager().registerEvents(new PlayerEventHandler(), this);
             }
             for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-                lastActivity.put(p.getUniqueId(), System.currentTimeMillis());
+                estimatedAfkTime.put(p.getUniqueId(), System.currentTimeMillis() + timeoutMillis);
                 isAFK.put(p.getUniqueId(), false);
             }
             cliMessage("已经启用挂机玩家检测");
@@ -102,13 +105,12 @@ public class VoteReboot extends JavaPlugin {
                             checkingPlayer = false;
                             this.cancel();
                         }
-                        for (UUID playerId : lastActivity.keySet()) {
-                            long elapsed = (System.currentTimeMillis() - lastActivity.get(playerId)) / 1000;
-                            if (elapsed > Integer.parseInt(getConfigValue(CONFIG_AFK_TIMEOUT)) && !isAFK.get(playerId)) {
+                        for (UUID playerId : estimatedAfkTime.keySet()) {
+                            if (System.currentTimeMillis() >= estimatedAfkTime.get(playerId) && !isAFK.get(playerId)) {
                                 isAFK.put(playerId, true);
                                 if (TRUE.equals(getConfigValue(CONFIG_AFK_NOTICE))) {
                                     if (VoteReboot.notice) {
-                                        globalMessage(playerId + "暂时离开了");
+                                        globalMessage(playerName.get(playerId) + "暂时离开了");
                                     }
                                 }
                             }
@@ -126,13 +128,13 @@ public class VoteReboot extends JavaPlugin {
         IPMap.clear();
         isVoting = false;
         isRebooting = false;
-        VoteStatus.forEach(((uuid, aBoolean) -> VoteStatus.put(uuid, false)));
+        voteStatus.forEach(((uuid, aBoolean) -> voteStatus.put(uuid, false)));
         voteMinuteLeft = 3;
         rebootCountdown = Integer.parseInt(getConfigValue(CONFIG_REBOOT_COUNTDOWN));
     }
 
     private void reload() {
-        VoteReboot.lastActivity.clear();
+        VoteReboot.estimatedAfkTime.clear();
         VoteReboot.isAFK.clear();
         IPMap.clear();
         isVoting = false;
@@ -197,9 +199,9 @@ public class VoteReboot extends JavaPlugin {
         String playerName = player.getName();
         UUID playerId = ((Player) player).getUniqueId();
         String ip = String.valueOf(((Player) player).getAddress().getAddress());
-        long voteCount = VoteStatus.values().stream().filter(voted -> voted).count();
+        long voteCount = voteStatus.values().stream().filter(voted -> voted).count();
         boolean haveVoted = false;
-        if (VoteStatus.get(playerId)) {
+        if (voteStatus.get(playerId)) {
             playerMessage(player, "你已经投过票了！");
             haveVoted = true;
         }
@@ -211,7 +213,7 @@ public class VoteReboot extends JavaPlugin {
         }
         if (!haveVoted) {
             IPMap.put(ip, true);
-            VoteStatus.put(playerId, true);
+            voteStatus.put(playerId, true);
             int onlinePlayers = Bukkit.getOnlinePlayers().size();
             int needPlayers = getNeedPlayers();
 
@@ -227,7 +229,7 @@ public class VoteReboot extends JavaPlugin {
     }
 
     public void checkVotes() {
-        long voteCount = VoteStatus.values().stream().filter(voted -> voted).count();
+        long voteCount = voteStatus.values().stream().filter(voted -> voted).count();
         if (voteCount >= getNeedPlayers()) {
             globalMessage("投票已经完成！服务器将在十秒后重启！");
             isVoting = false;
@@ -289,7 +291,7 @@ public class VoteReboot extends JavaPlugin {
                 } else {
                     isVoting = true;
                     UUID playerId = ((Player) sender).getUniqueId();
-                    VoteStatus.put(playerId, true);
+                    voteStatus.put(playerId, true);
                     IPMap.put(String.valueOf(((Player) sender).getAddress().getAddress()), true);
                     globalMessage("§e" + sender.getName() + " §a发起了投票重启 本服共§e" + onlinePlayers + "§a人在线，需要§e" + getNeedPlayers() + "§a人投票 目前票数：§e1");
                     globalMessage("请同意重启的玩家输入 /" + COMMAND_ACCEPT);
