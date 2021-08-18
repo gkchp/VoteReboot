@@ -93,6 +93,8 @@ public class VoteReboot extends JavaPlugin {
             }
             for (Player p : Bukkit.getServer().getOnlinePlayers()) {
                 estimatedAfkTime.put(p.getUniqueId(), System.currentTimeMillis() + timeoutMillis);
+                playerName.put(p.getUniqueId(), p.getName());
+                voteStatus.put(p.getUniqueId(), false);
                 isAFK.put(p.getUniqueId(), false);
             }
             cliMessage("已经启用挂机玩家检测");
@@ -105,12 +107,14 @@ public class VoteReboot extends JavaPlugin {
                             checkingPlayer = false;
                             this.cancel();
                         }
-                        for (UUID playerId : estimatedAfkTime.keySet()) {
-                            if (System.currentTimeMillis() >= estimatedAfkTime.get(playerId) && !isAFK.get(playerId)) {
-                                isAFK.put(playerId, true);
-                                if (TRUE.equals(getConfigValue(CONFIG_AFK_NOTICE))) {
-                                    if (VoteReboot.notice) {
-                                        globalMessage(playerName.get(playerId) + "暂时离开了");
+                        if (!estimatedAfkTime.isEmpty()) {
+                            for (UUID playerId : estimatedAfkTime.keySet()) {
+                                if (System.currentTimeMillis() >= estimatedAfkTime.get(playerId) && !isAFK.get(playerId)) {
+                                    isAFK.put(playerId, true);
+                                    if (TRUE.equals(getConfigValue(CONFIG_AFK_NOTICE))) {
+                                        if (VoteReboot.notice) {
+                                            globalMessage(playerName.get(playerId) + "暂时离开了");
+                                        }
                                     }
                                 }
                             }
@@ -229,33 +233,35 @@ public class VoteReboot extends JavaPlugin {
     }
 
     public void checkVotes() {
-        long voteCount = voteStatus.values().stream().filter(voted -> voted).count();
-        if (voteCount >= getNeedPlayers()) {
-            globalMessage("投票已经完成！服务器将在十秒后重启！");
-            isVoting = false;
-            isRebooting = true;
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (isRebooting) {
-                        globalMessage("服务器将在" + rebootCountdown + "秒后重启！");
-                        rebootCountdown--;
-                    } else {
-                        globalMessage("管理员取消了本次重启！");
-                        this.cancel();
-                    }
-                    if (rebootCountdown <= 0) {
-                        globalMessage("正在重启...");
-                        try {
-                            reboot();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+        if (isVoting) {
+            long voteCount = voteStatus.values().stream().filter(voted -> voted).count();
+            if (voteCount >= getNeedPlayers()) {
+                globalMessage("投票已经完成！服务器将在十秒后重启！");
+                isVoting = false;
+                isRebooting = true;
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (isRebooting) {
+                            globalMessage("服务器将在" + rebootCountdown + "秒后重启！");
+                            rebootCountdown--;
+                        } else {
+                            globalMessage("管理员取消了本次重启！");
+                            this.cancel();
                         }
-                        this.cancel();
+                        if (rebootCountdown <= 0) {
+                            globalMessage("正在重启...");
+                            try {
+                                reboot();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            this.cancel();
+                        }
                     }
-                }
-            }.runTaskTimerAsynchronously(this, 0L, SEC);
-            //参数是,主类、延迟、多少秒运行一次,比如5秒那就是5*20L
+                }.runTaskTimerAsynchronously(this, 0L, SEC);
+                //参数是,主类、延迟、多少秒运行一次,比如5秒那就是5*20L
+            }
         }
     }
 
@@ -318,6 +324,7 @@ public class VoteReboot extends JavaPlugin {
             } else {
                 playerMessage(sender, "已经有一个投票正在进行中，请勿重复发起投票！");
                 playerMessage(sender, "若需要同意重启，请输入 /" + COMMAND_ACCEPT);
+                checkVotes();
             }
         }
     }
