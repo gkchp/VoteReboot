@@ -77,7 +77,8 @@ public class PlayerEventHandler implements org.bukkit.event.Listener {
         if (VoteReboot.isAFK.get(playerId)) {
             //加同步防止多次提醒
             synchronized (VoteReboot.class) {
-                if (VoteReboot.isAFK.get(playerId)) {
+                //拿到锁的时候玩家可能已经退出了
+                if (VoteReboot.isAFK.containsKey(playerId)&&VoteReboot.isAFK.get(playerId)) {
                     VoteReboot.isAFK.put(playerId, false);
                     if (VoteReboot.notice) {
                         VoteReboot.globalMessage(name + "回来了");
