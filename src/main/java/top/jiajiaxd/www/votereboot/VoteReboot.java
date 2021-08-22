@@ -83,7 +83,7 @@ public class VoteReboot extends JavaPlugin {
         ipCheck = TRUE.equals(getConfigValue(CONFIG_CHECK_IP));
         checkPlayer = TRUE.equals(getConfigValue(CONFIG_CHECK_PLAYER));
         timeoutMillis = Long.parseLong(getConfigValue(CONFIG_AFK_TIMEOUT)) * 1000;
-        if (update && TRUE.equals(getConfigValue(CONFIG_CHECK_UPDATE))) {
+        if (TRUE.equals(getConfigValue(CONFIG_CHECK_UPDATE))) {
             checkUpdate();
         }
         if (checkPlayer) {
