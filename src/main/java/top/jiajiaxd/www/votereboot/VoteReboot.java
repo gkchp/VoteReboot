@@ -138,8 +138,10 @@ public class VoteReboot extends JavaPlugin {
     }
 
     private void reload() {
-        VoteReboot.estimatedAfkTime.clear();
-        VoteReboot.isAFK.clear();
+        estimatedAfkTime.clear();
+        playerName.clear();
+        voteStatus.clear();
+        isAFK.clear();
         IPMap.clear();
         isVoting = false;
         isRebooting = false;
